@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refunds RefundCase[]
+}
+
+model RefundCase {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  merchant      String
+  orderId       String?
+  transactionId String?
+
+  merchantEmail String?
+  emailSentAt   DateTime?
+
+  amount   Decimal
+  currency String  @default("INR")
+
+  reason String
+
+  purchaseDate DateTime?
+  deadline     DateTime?
+
+  status RefundStatus @default(PENDING)
+
+  emailSubject     String?
+  emailBody        String?
+  emailGeneratedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents RefundDocument[]
+}
+
+enum RefundStatus {
+  PENDING
+  EMAIL_DRAFTED
+  EMAIL_SENT
+  WAITING_FOR_REFUND
+  ACKNOWLEDGED
+  REFUND_APPROVED
+  REFUND_RECEIVED
+  FOLLOW_UP_REQUIRED
+  CLOSED
+}
+
+model RefundDocument {
+  id         String   @id @default(cuid())
+
+  refundId   String
+  refund     RefundCase @relation(fields: [refundId], references: [id], onDelete: Cascade)
+
+  filename   String
+  fileUrl    String
+
+  extractedText String?
+
+  extractedAmount        Decimal?
+  extractedTransactionId String?
+  extractedMerchant      String?
+  extractedDate          DateTime?
+
+  verificationScore Int?
+  verificationResult VerificationResult?
+
+  status DocumentStatus @default(UPLOADED)
+
+  uploadedAt DateTime @default(now())
+}
+
+enum VerificationResult {
+  VERIFIED
+  PARTIAL_MATCH
+  MISMATCH
+  UNABLE_TO_VERIFY
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  EXTRACTED
+  VERIFIED
+  FAILED
+}
